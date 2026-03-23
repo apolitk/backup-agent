@@ -25,6 +25,8 @@ Status Reporter ← Task Manager
 HTTP Handlers (API для тестирования)
 ```
 
+**Примечание:** Начиная с текущей версии, агент включает Polling Service и Status Reporter для полной интеграции с Karboii в pull-модели.
+
 ### Основные компоненты:
 
 1. **Polling Service**: Опрашивает Karboii API за новыми задачами (новый компонент)
@@ -197,10 +199,11 @@ curl -X POST http://localhost:8080/api/v1/backup \
 ### Текущая реализация
 
 **✅ Что работает:**
-- Polling Service для получения задач от Karboii
+- Polling Service для получения задач от Karboii (реализован в коде)
 - Асинхронное выполнение бэкапа (архивирование + загрузка в S3)
-- Отправка статуса задач обратно в Karboii
+- Отправка статуса задач обратно в Karboii через Status Reporter
 - Поддержка всех CRUD операций: backup, restore, list, delete
+- Интеграция с worker pool для параллельной обработки
 
 **⚠️ Архитектурные решения:**
 - **Агент как "pull-based executor"**: Активно запрашивает задачи вместо пассивного ожидания

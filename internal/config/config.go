@@ -15,6 +15,12 @@ type Config struct {
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
 
+	// Karboii integration
+	KarboiiEndpoint  string
+	KarboiiToken     string
+	ProjectID        string
+	PollingInterval  time.Duration
+
 	// S3
 	S3Endpoint  string
 	S3Region    string
@@ -42,6 +48,11 @@ func Load() *Config {
 		TLSKey:       getEnv("AGENT_TLS_KEY", ""),
 		ReadTimeout:  getDuration("AGENT_READ_TIMEOUT", 30*time.Second),
 		WriteTimeout: getDuration("AGENT_WRITE_TIMEOUT", 30*time.Second),
+
+		KarboiiEndpoint: getEnv("KARBOII_ENDPOINT", ""),
+		KarboiiToken:    getEnv("KARBOII_TOKEN", ""),
+		ProjectID:       getEnv("PROJECT_ID", ""),
+		PollingInterval: getDuration("POLLING_INTERVAL", 30*time.Second),
 
 		S3Endpoint:  getEnv("S3_ENDPOINT", ""),
 		S3Region:    getEnv("S3_REGION", ""),

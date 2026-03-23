@@ -13,6 +13,8 @@ import (
 	"agent/internal/config"
 	"agent/internal/handler"
 	"agent/internal/logger"
+	"agent/internal/polling"
+	"agent/internal/reporter"
 	"agent/internal/storage"
 	"agent/internal/task"
 	"agent/internal/worker"
@@ -47,6 +49,31 @@ func main() {
 
 	taskManager := task.NewTaskManager(1 * time.Hour)
 	defer taskManager.Close()
+
+	// Инициализация reporter для отправки статуса в Karboii
+	var statusReporter *reporter.Service
+	if cfg.KarboiiEndpoint != "" && cfg.KarboiiToken != "" && cfg.ProjectID != "" {
+		statusReporter = reporter.New(cfg.KarboiiEndpoint, cfg.KarboiiToken, cfg.ProjectID, taskManager, log)
+		taskManager = task.NewTaskManagerWithCallback(1*time.Hour, func(t *task.Task) {
+			if statusReporter != nil {
+				result := make(map[string]interface{})
+				if t.Data != nil {
+					// Можно добавить логику для извлечения результата из t.Data
+				}
+				statusReporter.ReportStatus(t.KarboiiTaskID, t.Status, t.Message, result)
+			}
+		})
+		defer statusReporter.Stop()
+		go statusReporter.Start()
+	}
+
+	// Инициализация polling service для получения задач от Karboii
+	var pollingService *polling.Service
+	if cfg.KarboiiEndpoint != "" && cfg.KarboiiToken != "" && cfg.ProjectID != "" && cfg.PollingInterval > 0 {
+		pollingService = polling.New(cfg.KarboiiEndpoint, cfg.KarboiiToken, cfg.ProjectID, cfg.PollingInterval, taskManager, s3Client, arc, cfg.TempDir, log)
+		defer pollingService.Stop()
+		go pollingService.Start()
+	}
 
 	workerPool := worker.New(cfg.MaxWorkers)
 	defer workerPool.Stop()

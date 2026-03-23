@@ -13,6 +13,7 @@ type TaskManager struct {
 	taskTimeout time.Duration
 	cleanupTick *time.Ticker
 	stopChan    chan struct{}
+	onTaskComplete func(task *Task) // Callback для завершения задачи
 }
 
 func NewTaskManager(taskTimeout time.Duration) *TaskManager {
@@ -21,6 +22,18 @@ func NewTaskManager(taskTimeout time.Duration) *TaskManager {
 		taskTimeout: taskTimeout,
 		cleanupTick: time.NewTicker(1 * time.Minute),
 		stopChan:    make(chan struct{}),
+	}
+	go tm.cleanup()
+	return tm
+}
+
+func NewTaskManagerWithCallback(taskTimeout time.Duration, onComplete func(task *Task)) *TaskManager {
+	tm := &TaskManager{
+		tasks:         make(map[string]*Task),
+		taskTimeout:   taskTimeout,
+		cleanupTick:   time.NewTicker(1 * time.Minute),
+		stopChan:      make(chan struct{}),
+		onTaskComplete: onComplete,
 	}
 	go tm.cleanup()
 	return tm
@@ -43,6 +56,24 @@ func (tm *TaskManager) Create(taskType string, data interface{}) string {
 	return id
 }
 
+func (tm *TaskManager) CreateWithKarboiiID(taskType string, karboiiTaskID string, data interface{}) string {
+	id := uuid.New().String()
+	now := time.Now()
+	task := &Task{
+		ID:           id,
+		KarboiiTaskID: karboiiTaskID,
+		Type:         taskType,
+		Status:       TaskRunning,
+		CreatedAt:    now.Unix(),
+		UpdatedAt:    now.Unix(),
+		Data:         data,
+	}
+	tm.mu.Lock()
+	tm.tasks[id] = task
+	tm.mu.Unlock()
+	return id
+}
+
 func (tm *TaskManager) Update(id string, status TaskStatus, message string) error {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
@@ -50,6 +81,9 @@ func (tm *TaskManager) Update(id string, status TaskStatus, message string) erro
 		t.Status = status
 		t.Message = message
 		t.UpdatedAt = time.Now().Unix()
+		if tm.onTaskComplete != nil && (status == TaskCompleted || status == TaskFailed) {
+			go tm.onTaskComplete(t)
+		}
 		return nil
 	}
 	return ErrTaskNotFound

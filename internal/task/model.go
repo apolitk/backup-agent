@@ -11,13 +11,14 @@ const (
 )
 
 type Task struct {
-	ID        string      `json:"id"`
-	Type      string      `json:"type"`
-	Status    TaskStatus  `json:"status"`
-	Message   string      `json:"message,omitempty"`
-	CreatedAt int64       `json:"created_at"`
-	UpdatedAt int64       `json:"updated_at"`
-	Data      interface{} `json:"-"`
+	ID           string      `json:"id"`
+	KarboiiTaskID string     `json:"karboii_task_id,omitempty"`
+	Type         string      `json:"type"`
+	Status       TaskStatus  `json:"status"`
+	Message      string      `json:"message,omitempty"`
+	CreatedAt    int64       `json:"created_at"`
+	UpdatedAt    int64       `json:"updated_at"`
+	Data         interface{} `json:"-"`
 }
 
 var (
